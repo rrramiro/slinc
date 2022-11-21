@@ -1,6 +1,5 @@
 package fr.hammons.slinc
 
-import fr.hammons.slinc.StdlibSpec.{div_t, ldiv_t, lldiv_t}
 import scala.util.Random
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop.*
@@ -11,12 +10,18 @@ import fr.hammons.slinc.types.OS
 trait StdlibSpec(val slinc: Slinc) extends ScalaCheckSuite:
   import slinc.{given, *}
 
+  case class div_t(quot: Int, rem: Int) derives Struct
+  case class ldiv_t(quot: CLong, rem: CLong) derives Struct
+  case class lldiv_t(quot: Long, rem: Long) derives Struct
+
   object Cstd derives Library:
     def abs(a: Int): Int = Library.binding
     def labs(l: CLong): CLong = Library.binding
+    //TODO
+    def llabs(l: Long): Long = Library.binding
     def div(a: Int, b: Int): div_t = Library.binding
-    //def ldiv(a: Long, b: Long): ldiv_t = Library.binding
-    //def lldiv(a: Long, b: Long): lldiv_t = Library.binding
+    def ldiv(a: CLong, b: CLong): ldiv_t = Library.binding
+    def lldiv(a: Long, b: Long): lldiv_t = Library.binding
     def rand(): Int = Library.binding
     def qsort[A](
         array: Ptr[A],
@@ -29,8 +34,6 @@ trait StdlibSpec(val slinc: Slinc) extends ScalaCheckSuite:
     def atof(str: Ptr[Byte]): CDouble = Library.binding
     def strtod(str: Ptr[Byte], endptr: Ptr[Ptr[Byte]]): CDouble =
       Library.binding
-
-  given Struct[div_t] = Struct.derived
 
   property("abs gives back absolute integers") {
     forAll { (i: Int) =>
@@ -78,15 +81,14 @@ trait StdlibSpec(val slinc: Slinc) extends ScalaCheckSuite:
     assertEquals(Cstd.div(5, 2), div_t(2, 1))
   }
 
-  /*
   test("ldiv") {
-    assertEquals(Cstd.ldiv(5L, 2L), ldiv_t(2L, 1L))
+    assertEquals(Cstd.ldiv(5.as[CLong], 2.as[CLong]), ldiv_t(2.as[CLong], 1.as[CLong]))
   }
-  
+
   test("lldiv") {
     assertEquals(Cstd.lldiv(5L, 2L), lldiv_t(2L, 1L))
   }
-  */
+
   test("rand") {
     assertNotEquals(Cstd.rand(), Cstd.rand())
   }
@@ -227,7 +229,3 @@ trait StdlibSpec(val slinc: Slinc) extends ScalaCheckSuite:
     }
   }
 
-object StdlibSpec:
-  case class div_t(quot: Int, rem: Int)
-  case class ldiv_t(quot: Long, rem: Long)
-  case class lldiv_t(quot: Long, rem: Long)
